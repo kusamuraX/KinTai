@@ -21,6 +21,8 @@ class MyHomePage extends StatefulWidget {
 
   final String title;
 
+  final String noneTime = '--:--';
+
   @override
   _MyHomePageState createState() => new _MyHomePageState();
 }
@@ -30,6 +32,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   TabController _tabController;
 
   List<String> stTimes = <String>[];
+  List<String> edTimes = <String>[];
 
   List<Widget> _getTab(){
     final Size mediaSize = MediaQuery.of(context).size;
@@ -53,12 +56,29 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     return tabs;
   }
 
+  TimeOfDay _getStShowTime(String timeStr){
+    if(timeStr == widget.noneTime){
+      return TimeOfDay(hour: 9, minute: 0);
+    } else {
+      return new TimeOfDay(hour: int.parse(timeStr.split(":")[0]), minute: int.parse(timeStr.split(":")[1]));
+    }
+  }
+
+  TimeOfDay _getEdShowTime(String timeStr){
+    if(timeStr == widget.noneTime){
+      return TimeOfDay.now();
+    } else {
+      return new TimeOfDay(hour: int.parse(timeStr.split(":")[0]), minute: int.parse(timeStr.split(":")[1]));
+    }
+  }
+
   List<Widget> _getDayList(var month){
     List<Widget> days = <Widget>[];
     final lastDayOfMonth = new DateTime(2019, month + 1, 0);
 
     days.addAll(List.generate(lastDayOfMonth.day, (i) => i).map((int i){
-      stTimes.add("--:--");
+      stTimes.add(widget.noneTime);
+      edTimes.add(widget.noneTime);
       return Container(
         padding: const EdgeInsets.all(32.0),
         child: Row(
@@ -75,7 +95,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                         onPressed: () async {
                           TimeOfDay selectTime = await showTimePicker(
                               context: context,
-                              initialTime: TimeOfDay.now()
+                              initialTime: _getStShowTime(stTimes[i])
                           );
                           setState(() {
                             stTimes[i] = selectTime.format(context);
@@ -83,7 +103,19 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                         },
                         child: new Text(stTimes[i]),
                       ),
-                      Text(' - '),
+                      Text(' ～ '),
+                      new FlatButton(
+                        onPressed: () async {
+                          TimeOfDay selectTime = await showTimePicker(
+                              context: context,
+                              initialTime: _getEdShowTime(edTimes[i])
+                          );
+                          setState(() {
+                            edTimes[i] = selectTime.format(context);
+                          });
+                        },
+                        child: new Text(edTimes[i]),
+                      ),
                     ],
                   ),
                 )
@@ -110,7 +142,6 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-
     return new Scaffold(
       appBar: new AppBar(
         // Here we take the value from the MyHomePage object that was created by
