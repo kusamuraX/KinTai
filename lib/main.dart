@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'dateInfo.dart';
+import 'tab.dart';
 
 void main() => runApp(new MyApp());
 
 class MyApp extends StatelessWidget {
+
+  static double actualWorkingHours = 0.0;
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -11,7 +16,12 @@ class MyApp extends StatelessWidget {
       theme: new ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: new MyHomePage(title: 'KinTai',),
+      home: new SplashPage(),
+      routes: <String, WidgetBuilder>{
+        '/main': (BuildContext context) => new MyHomePage(
+              title: 'KinTai',
+            ),
+      },
     );
   }
 }
@@ -21,180 +31,90 @@ class SpaceBox extends SizedBox {
       : super(width: width, height: height);
 
   SpaceBox.width([double value = 8.0]) : super(width: value);
+
   SpaceBox.height([double value = 8.0]) : super(height: value);
+}
+
+class SplashPage extends StatefulWidget {
+  SplashPage({Key key}) : super(key: key);
+
+  @override
+  State<StatefulWidget> createState() => new _SplashPageState();
+}
+
+class _SplashPageState extends State<SplashPage> {
+  @override
+  void initState() {
+    super.initState();
+    _timer();
+  }
+
+  _timer() async {
+    new DateInfo().getHoliday(DateTime.now().month).then((bool) {
+      Navigator.pushReplacementNamed(context, '/main');
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            new CircularProgressIndicator(),
+            new SpaceBox(),
+            new Text('起動処理中')
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
 
   final String title;
-  final String noneTime = '--:--';
-  final saturdayColor = Colors.blueAccent.shade100;
-  final sundayColor = Colors.redAccent.shade100;
-  final normalColor = Colors.white;
+  static final String noneTime = '--:--';
 
   @override
   _MyHomePageState createState() => new _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
+class _MyHomePageState extends State<MyHomePage>
+    with SingleTickerProviderStateMixin {
+  DateInfo dateInfo;
 
   TabController _tabController;
-
-  int _normalWorkingHours = 0;
-  int _actualWorkingHours = 0;
 
   List<String> stTimes = <String>[];
   List<String> edTimes = <String>[];
 
-  List<Widget> _getTab(){
-    final Size mediaSize = MediaQuery.of(context).size;
+  List<Widget> _getTab() {
     List<Widget> tabs = <Widget>[];
-    for(var i = 4; i <= 4; i++) {
-      tabs.add(Container(
-        width: mediaSize.width,
-        alignment: Alignment.center,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-          new Text(i.toString() + '月'),
-          new Text('稼働時間 : ( $_actualWorkingHours/$_normalWorkingHours )h'),
-        ],),
-      ));
+    for (var i = 5; i <= 5; i++) {
+      tabs.add(new TabHead(i));
     }
     return tabs;
   }
 
-  List<Widget> _getTabView(){
+  List<Widget> _getTabView() {
     List<Widget> tabs = <Widget>[];
-    for(var i = 4; i <= 4; i++) {
-      tabs.add(new ListView(children: _getDayList(i),));
+    for (var i = 5; i <= 5; i++) {
+      tabs.add(new SingleChildScrollView(child: new Column(
+        children: _getDayList(i),
+      ),));
     }
     return tabs;
   }
 
-  TimeOfDay _getStShowTime(String timeStr){
-    if(timeStr == widget.noneTime){
-      return TimeOfDay(hour: 9, minute: 0);
-    } else {
-      return new TimeOfDay(hour: int.parse(timeStr.split(":")[0]), minute: int.parse(timeStr.split(":")[1]));
-    }
-  }
-
-  TimeOfDay _getEdShowTime(String timeStr){
-    if(timeStr == widget.noneTime){
-      return TimeOfDay.now();
-    } else {
-      return new TimeOfDay(hour: int.parse(timeStr.split(":")[0]), minute: int.parse(timeStr.split(":")[1]));
-    }
-  }
-
-  Color _getDayColor(int month, int day){
-    var week = new DateTime(2019, month + 1, day).weekday;
-    if(week == DateTime.saturday){
-      return widget.saturdayColor;
-    } else if(week == DateTime.sunday){
-      return widget.sundayColor;
-    } else {
-      return widget.normalColor;
-    }
-  }
-
-  List<Widget> _getDayList(var month){
+  List<Widget> _getDayList(var month) {
     List<Widget> days = <Widget>[];
+
     final lastDayOfMonth = new DateTime(2019, month + 1, 0);
-    days.addAll(List.generate(lastDayOfMonth.day, (i) => i).map((int i){
-      stTimes.add(widget.noneTime);
-      edTimes.add(widget.noneTime);
-      return Container(
-        padding: const EdgeInsets.all(16.0),
-        decoration: new BoxDecoration(
-            color: _getDayColor(month, i),
-            border: new Border(bottom: new BorderSide(color: Colors.black12, width: 1.0))
-        ),
-        child: Row(
-          children: <Widget>[
-            Expanded(child: Column(
-              children: [
-                Container(
-                  alignment: Alignment.topLeft,
-                  child: Text((i+1).toString() + '日'),
-                ),
-                Container(
-                  child: Row(
-                    children: [
-                      new FlatButton(
-                        onPressed: () async {
-                          TimeOfDay selectTime = await showTimePicker(
-                              context: context,
-                              initialTime: _getStShowTime(stTimes[i])
-                          );
-                          setState(() {
-                            stTimes[i] = selectTime.format(context);
-                          });
-                        },
-                        child: new Text(stTimes[i], style: TextStyle(fontSize: 20.0),),
-                      ),
-                      Text('～', style: TextStyle(fontSize: 20.0),),
-                      new FlatButton(
-                        onPressed: () async {
-                          TimeOfDay selectTime = await showTimePicker(
-                              context: context,
-                              initialTime: _getEdShowTime(edTimes[i])
-                          );
-                          setState(() {
-                            edTimes[i] = selectTime.format(context);
-                          });
-                        },
-                        child: new Text(edTimes[i], style: TextStyle(fontSize: 20.0),),
-                      ),
-                    ],
-                  ),
-                ),
-               Row(
-                children: <Widget>[
-                  new MaterialButton(
-                    minWidth: 30.0,
-                    textColor: Colors.white,
-                    color: Colors.blue,
-                    onPressed: (){
-                      setState(() {
-                        stTimes[i] = TimeOfDay(hour: 9, minute: 0).format(context);
-                        edTimes[i] = TimeOfDay(hour: 18, minute: 0).format(context);
-                      });
-                    },
-                    child: new Text("定時"),
-                  ),
-                  SpaceBox.width(16.0),
-                  new MaterialButton(
-                    minWidth: 30.0,
-                    textColor: Colors.white,
-                    color: Colors.blue,
-                    onPressed: (){
-                      setState(() {
-                      });
-                    },
-                    child: new Text("休暇"),
-                  ),
-                  SpaceBox.width(16.0),
-                  new MaterialButton(
-                    minWidth: 30.0,
-                    textColor: Colors.white,
-                    color: Colors.blue,
-                    onPressed: (){
-                      setState(() {
-                        stTimes[i] = widget.noneTime;
-                        edTimes[i] = widget.noneTime;
-                      });
-                    },
-                    child: new Text("クリア"),
-                  ),
-                ],
-              ) ,
-              ],
-            ))
-          ],
-        ),);
+    days.addAll(List.generate(lastDayOfMonth.day, (i) => i).map((int i) {
+      return new DayView(month, i);
     }).toList());
 
     return days;
@@ -204,6 +124,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   void initState() {
     super.initState();
     _tabController = new TabController(length: 1, vsync: this);
+    dateInfo = new DateInfo();
   }
 
   @override
@@ -214,16 +135,15 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    print('build');
     return new Scaffold(
       appBar: new AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: new Text(widget.title),
-        bottom: new TabBar(
+        flexibleSpace: new SafeArea(
+            child: new TabBar(
           tabs: _getTab(),
           controller: _tabController,
           isScrollable: true,
-        ),
+        )),
       ),
       body: new TabBarView(
         controller: _tabController,
