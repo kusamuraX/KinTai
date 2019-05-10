@@ -14,6 +14,8 @@ class DateInfo {
   final sundayColor = Colors.redAccent.shade100;
   final normalColor = Colors.white;
 
+  static final String noneTime = '--:--';
+
   static Map<String, String> holidayMap = {};
   static double normalWorkingHours = 0.0;
 

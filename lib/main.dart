@@ -76,7 +76,6 @@ class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
 
   final String title;
-  static final String noneTime = '--:--';
 
   @override
   _MyHomePageState createState() => new _MyHomePageState();
@@ -84,12 +83,15 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage>
     with SingleTickerProviderStateMixin {
+
   DateInfo dateInfo;
 
   TabController _tabController;
 
-  List<String> stTimes = <String>[];
-  List<String> edTimes = <String>[];
+  List<DayView> dayViewList;
+
+
+  var callTester = (String s) =>  print(s);
 
   List<Widget> _getTab() {
     List<Widget> tabs = <Widget>[];
@@ -110,14 +112,12 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   List<Widget> _getDayList(var month) {
-    List<Widget> days = <Widget>[];
 
     final lastDayOfMonth = new DateTime(2019, month + 1, 0);
-    days.addAll(List.generate(lastDayOfMonth.day, (i) => i).map((int i) {
-      return new DayView(month, i);
+    return (List.generate(lastDayOfMonth.day, (i) => i).map((int i) {
+      return new DayView(month, i, callTester);
     }).toList());
 
-    return days;
   }
 
   @override
@@ -135,7 +135,8 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   Widget build(BuildContext context) {
-    print('build');
+    print('_MyHomePageState build');
+    callTester('init build');
     return new Scaffold(
       appBar: new AppBar(
         flexibleSpace: new SafeArea(
