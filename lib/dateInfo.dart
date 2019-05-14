@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const String _calLang = 'japanese__ja@holiday.calendar.google.com';
 const String _apiKey = 'AIzaSyBaAkBi0L9OVLn0_64P8vU7oFw2VSizD0M';
@@ -57,8 +58,6 @@ class DateInfo {
   }
 
   Color getDayColor(int month, int day) {
-
-    print('getDayColor()');
 
     DateTime _dateTime = new DateTime(2019, month, day + 1);
     var week = _dateTime.weekday;
@@ -119,5 +118,28 @@ class DateInfo {
         normalWorkingHours += 8.0;
       }
     });
+  }
+
+  Future<double> getActualWorkingHours(int month) async{
+
+    double actualTime = 0.0;
+
+    final lastDayOfMonth = new DateTime(2019, month + 1, 0);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    DateTime currentDay = new DateTime(2019, month, 1);
+    currentDay.add(new Duration(days: 1));
+    List.generate(lastDayOfMonth.day, (i) => i).forEach((i){
+      var date = currentDay.add(new Duration(days: i));
+      String stKey = '${date.month}-${date.day}-st';
+      String edKey = '${date.month}-${date.day}-ed';
+      String stTime = prefs.getString(stKey);
+      String edTime = prefs.getString(edKey);
+      if(edTime != null){
+        print('${date.month}-${date.day} : $stTime - $edTime');
+        actualTime += 8.0;
+      }
+    });
+
+    return actualTime;
   }
 }

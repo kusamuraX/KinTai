@@ -90,13 +90,13 @@ class _MyHomePageState extends State<MyHomePage>
 
   List<DayView> dayViewList;
 
+  final _tabHeaderKey = GlobalKey<TabHeadState>();
 
-  var callTester = (String s) =>  print(s);
 
   List<Widget> _getTab() {
     List<Widget> tabs = <Widget>[];
     for (var i = 5; i <= 5; i++) {
-      tabs.add(new TabHead(i));
+      tabs.add(new TabHead(key: _tabHeaderKey, month: i,));
     }
     return tabs;
   }
@@ -115,7 +115,7 @@ class _MyHomePageState extends State<MyHomePage>
 
     final lastDayOfMonth = new DateTime(2019, month + 1, 0);
     return (List.generate(lastDayOfMonth.day, (i) => i).map((int i) {
-      return new DayView(month, i, callTester);
+      return new DayView(month: month, day: (i+1), titleKey: _tabHeaderKey,);
     }).toList());
 
   }
@@ -136,7 +136,6 @@ class _MyHomePageState extends State<MyHomePage>
   @override
   Widget build(BuildContext context) {
     print('_MyHomePageState build');
-    callTester('init build');
     return new Scaffold(
       appBar: new AppBar(
         flexibleSpace: new SafeArea(

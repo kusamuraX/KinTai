@@ -5,26 +5,46 @@ import 'dateInfo.dart';
 
 // タブタイトル
 class TabHead extends StatefulWidget {
-  final int _month;
+  final int month;
 
-  TabHead(int month) : _month = month;
+  const TabHead({
+    Key key,
+    this.month,
+  }) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => new _TabHeadState(_month);
+  State<StatefulWidget> createState() => new TabHeadState(month);
 }
 
-class _TabHeadState extends State<TabHead> {
+class TabHeadState extends State<TabHead> {
   int _month;
+  double _actualWorkTime;
 
-  _TabHeadState(int month) {
+  TabHeadState(int month) {
     _month = month;
+    _actualWorkTime = MyApp.actualWorkingHours;
+  }
+
+  calc() {
+    _updateActualTime();
+  }
+
+  _updateActualTime() async {
+    double hours = await new DateInfo().getActualWorkingHours(widget.month);
+    setState(() {
+      _actualWorkTime = hours;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _updateActualTime();
   }
 
   @override
   Widget build(BuildContext context) {
-    final Size mediaSize = MediaQuery
-        .of(context)
-        .size;
+    final Size mediaSize = MediaQuery.of(context).size;
     return Container(
       width: mediaSize.width,
       alignment: Alignment.center,
@@ -33,7 +53,7 @@ class _TabHeadState extends State<TabHead> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
           new Text(_month.toString() + '月'),
-          new Text('稼働時間 : ( ${MyApp.actualWorkingHours} / ${DateInfo
+          new Text('稼働時間 : ( $_actualWorkTime / ${DateInfo
               .normalWorkingHours} )h'),
         ],
       ),
@@ -43,21 +63,21 @@ class _TabHeadState extends State<TabHead> {
 
 // 日付の１行データ
 class DayView extends StatefulWidget {
-  final int _month;
-  final int _day;
-  final dynamic _caller;
+  final int month;
+  final int day;
+  final GlobalKey<TabHeadState> titleKey;
 
-  DayView(int month, int day, dynamic caller)
-      : _month = month,
-        _day = day,
-        _caller = caller;
+  DayView({
+    this.month,
+    this.day,
+    this.titleKey,
+  });
 
   @override
-  State<StatefulWidget> createState() => new _DayViewState(_month, _day);
+  State<StatefulWidget> createState() => new _DayViewState(month, day);
 }
 
 class _DayViewState extends State<DayView> {
-
   int _month;
   int _day;
 
@@ -83,9 +103,21 @@ class _DayViewState extends State<DayView> {
     print('_DayViewState dispose $_day');
   }
 
+  void saveFixTime() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('$_month-$_day-st', '09:00');
+    await prefs.setString('$_month-$_day-ed', '18:00');
+    widget.titleKey.currentState.calc();
+  }
+
+  void clearTime() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('$_month-$_day');
+    widget.titleKey.currentState.calc();
+  }
+
   @override
   Widget build(BuildContext context) {
-    print('_DayViewState build $_day');
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: new BoxDecoration(
@@ -96,60 +128,69 @@ class _DayViewState extends State<DayView> {
         children: <Widget>[
           Expanded(
               child: Column(
+            children: [
+              Container(
+                alignment: Alignment.topLeft,
+                child: dateInfo.getDayText(_month, _day),
+              ),
+              Row(
                 children: [
-                  Container(
-                    alignment: Alignment.topLeft,
-                    child: dateInfo.getDayText(_month, _day),
+                  new StTimeBtn(
+                    key: _stKey,
+                    timeStr: DateInfo.noneTime,
+                    date: '$_month-$_day',
                   ),
-                  Row(
-                    children: [
-                      new StTimeBtn(key: _stKey, timeStr: DateInfo.noneTime,),
-                      const Text(
-                        '～',
-                        style: TextStyle(fontSize: 20.0),
-                      ),
-                      new EdTimeBtn(key: _edKey, timeStr: DateInfo.noneTime,),
-                    ],
+                  const Text(
+                    '～',
+                    style: TextStyle(fontSize: 20.0),
                   ),
-                  SpaceBox(),
-                  Row(
-                    children: <Widget>[
-                      new MaterialButton(
-                        minWidth: 30.0,
-                        textColor: Colors.white,
-                        color: Colors.blue,
-                        onPressed: () {
-                          widget._caller('tg $_day');
-                          _stKey.currentState.setFixTime();
-                          _edKey.currentState.setFixTime();
-                        },
-                        child: const Text("定時"),
-                      ),
-                      SpaceBox.width(16.0),
-                      new MaterialButton(
-                        minWidth: 30.0,
-                        textColor: Colors.white,
-                        color: Colors.blue,
-                        onPressed: () {
-                          setState(() {});
-                        },
-                        child: const Text("休暇"),
-                      ),
-                      SpaceBox.width(16.0),
-                      new MaterialButton(
-                        minWidth: 30.0,
-                        textColor: Colors.white,
-                        color: Colors.blue,
-                        onPressed: () {
-                          _stKey.currentState.clear();
-                          _edKey.currentState.clear();
-                        },
-                        child: const Text("クリア"),
-                      ),
-                    ],
+                  new EdTimeBtn(
+                    key: _edKey,
+                    timeStr: DateInfo.noneTime,
+                    date: '$_month-$_day',
                   ),
                 ],
-              ))
+              ),
+              SpaceBox(),
+              Row(
+                children: <Widget>[
+                  new MaterialButton(
+                    minWidth: 30.0,
+                    textColor: Colors.white,
+                    color: Colors.blue,
+                    onPressed: () {
+                      _stKey.currentState.setFixTime();
+                      _edKey.currentState.setFixTime();
+                      saveFixTime();
+                    },
+                    child: const Text("定時"),
+                  ),
+                  SpaceBox.width(16.0),
+                  new MaterialButton(
+                    minWidth: 30.0,
+                    textColor: Colors.white,
+                    color: Colors.blue,
+                    onPressed: () {
+                      setState(() {});
+                    },
+                    child: const Text("休暇"),
+                  ),
+                  SpaceBox.width(16.0),
+                  new MaterialButton(
+                    minWidth: 30.0,
+                    textColor: Colors.white,
+                    color: Colors.blue,
+                    onPressed: () {
+                      _stKey.currentState.clear();
+                      _edKey.currentState.clear();
+                      clearTime();
+                    },
+                    child: const Text("クリア"),
+                  ),
+                ],
+              ),
+            ],
+          ))
         ],
       ),
     );
@@ -158,21 +199,16 @@ class _DayViewState extends State<DayView> {
 
 // 開始時間表示ボタン
 class StTimeBtn extends StatefulWidget {
-
   final String timeStr;
+  final String date;
 
-  const StTimeBtn({
-    Key key,
-    this.timeStr,
-  }) : super(key: key);
+  const StTimeBtn({Key key, this.timeStr, this.date}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => new _StTimeBtnState(timeStr);
-
 }
 
 class _StTimeBtnState extends State<StTimeBtn> {
-
   String _time;
 
   _StTimeBtnState(this._time);
@@ -199,17 +235,40 @@ class _StTimeBtnState extends State<StTimeBtn> {
     });
   }
 
+  void saveTime() async {
+    if (_time != DateInfo.noneTime) {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      prefs.setString('${widget.date}-st', _time);
+    }
+  }
+
+  void getSavedTime() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String time = prefs.getString('${widget.date}-st');
+    if(time != null && time.isNotEmpty){
+      setState(() {
+        _time = time;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getSavedTime();
+  }
+
   @override
   Widget build(BuildContext context) {
     return new FlatButton(
       onPressed: () async {
         TimeOfDay selectTime = await showTimePicker(
-            context: context,
-            initialTime: _getStShowTime(_time));
+            context: context, initialTime: _getStShowTime(_time));
         if (selectTime != null) {
           setState(() {
             _time = selectTime.format(context);
           });
+          saveTime();
         }
       },
       child: new Text(
@@ -218,32 +277,27 @@ class _StTimeBtnState extends State<StTimeBtn> {
       ),
     );
   }
-
 }
 
 // 終了時間表示ボタン
 class EdTimeBtn extends StatefulWidget {
-
   final String timeStr;
-  final String day;
+  final String date;
 
   const EdTimeBtn({
     Key key,
     this.timeStr,
-    this.day,
+    this.date,
   }) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => new _EdTimeBtnState(timeStr, day);
-
+  State<StatefulWidget> createState() => new _EdTimeBtnState(timeStr);
 }
 
 class _EdTimeBtnState extends State<EdTimeBtn> {
-
   String _time;
-  String _day;
 
-  _EdTimeBtnState(this._time, this._day);
+  _EdTimeBtnState(this._time);
 
   TimeOfDay _getEdShowTime(String timeStr) {
     if (timeStr == DateInfo.noneTime) {
@@ -268,10 +322,26 @@ class _EdTimeBtnState extends State<EdTimeBtn> {
   }
 
   void saveTime() async {
-    if(_time != DateInfo.noneTime) {
+    if (_time != DateInfo.noneTime) {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      prefs.setString(_day, _time);
+      prefs.setString('${widget.date}-ed', _time);
     }
+  }
+
+  void getSavedTime() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String time = prefs.getString('${widget.date}-ed');
+    if(time != null && time.isNotEmpty){
+      setState(() {
+        _time = time;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getSavedTime();
   }
 
   @override
@@ -279,13 +349,12 @@ class _EdTimeBtnState extends State<EdTimeBtn> {
     return new FlatButton(
       onPressed: () async {
         TimeOfDay selectTime = await showTimePicker(
-            context: context,
-            initialTime: _getEdShowTime(_time));
+            context: context, initialTime: _getEdShowTime(_time));
         if (selectTime != null) {
           setState(() {
             _time = selectTime.format(context);
+            saveTime();
           });
-
         }
       },
       child: new Text(
@@ -294,5 +363,4 @@ class _EdTimeBtnState extends State<EdTimeBtn> {
       ),
     );
   }
-
 }
