@@ -134,9 +134,13 @@ class DateInfo {
       String edKey = '${date.month}-${date.day}-ed';
       String stTime = prefs.getString(stKey);
       String edTime = prefs.getString(edKey);
-      if(edTime != null){
+      if(stTime != null && edTime != null){
         print('${date.month}-${date.day} : $stTime - $edTime');
-        actualTime += 8.0;
+        DateTime stDateTime  = new DateTime(2019, month, i, int.parse(stTime.split(":")[0]), int.parse(stTime.split(":")[1]));
+        DateTime edDateTime  = new DateTime(2019, month, i, int.parse(edTime.split(":")[0]), int.parse(edTime.split(":")[1]));
+        Duration diff = edDateTime.difference(stDateTime);
+        print('diff ${diff.inHours.toDouble()} h');
+        actualTime += diff.inHours.toDouble() - 1.0;
       }
     });
 

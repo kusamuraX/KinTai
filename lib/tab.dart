@@ -112,7 +112,8 @@ class _DayViewState extends State<DayView> {
 
   void clearTime() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('$_month-$_day');
+    await prefs.remove('$_month-$_day-st');
+    await prefs.remove('$_month-$_day-ed');
     widget.titleKey.currentState.calc();
   }
 
@@ -139,6 +140,7 @@ class _DayViewState extends State<DayView> {
                     key: _stKey,
                     timeStr: DateInfo.noneTime,
                     date: '$_month-$_day',
+                    titleKey: widget.titleKey,
                   ),
                   const Text(
                     '～',
@@ -148,6 +150,7 @@ class _DayViewState extends State<DayView> {
                     key: _edKey,
                     timeStr: DateInfo.noneTime,
                     date: '$_month-$_day',
+                    titleKey: widget.titleKey,
                   ),
                 ],
               ),
@@ -201,8 +204,9 @@ class _DayViewState extends State<DayView> {
 class StTimeBtn extends StatefulWidget {
   final String timeStr;
   final String date;
+  final GlobalKey<TabHeadState> titleKey;
 
-  const StTimeBtn({Key key, this.timeStr, this.date}) : super(key: key);
+  const StTimeBtn({Key key, this.timeStr, this.date, this.titleKey}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => new _StTimeBtnState(timeStr);
@@ -239,6 +243,7 @@ class _StTimeBtnState extends State<StTimeBtn> {
     if (_time != DateInfo.noneTime) {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       prefs.setString('${widget.date}-st', _time);
+      widget.titleKey.currentState.calc();
     }
   }
 
@@ -283,11 +288,13 @@ class _StTimeBtnState extends State<StTimeBtn> {
 class EdTimeBtn extends StatefulWidget {
   final String timeStr;
   final String date;
+  final GlobalKey<TabHeadState> titleKey;
 
   const EdTimeBtn({
     Key key,
     this.timeStr,
     this.date,
+    this.titleKey
   }) : super(key: key);
 
   @override
@@ -325,6 +332,7 @@ class _EdTimeBtnState extends State<EdTimeBtn> {
     if (_time != DateInfo.noneTime) {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       prefs.setString('${widget.date}-ed', _time);
+      widget.titleKey.currentState.calc();
     }
   }
 
