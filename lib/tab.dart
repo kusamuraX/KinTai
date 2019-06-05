@@ -66,12 +66,9 @@ class DayView extends StatefulWidget {
   final int month;
   final int day;
   final GlobalKey<TabHeadState> titleKey;
+  final GlobalKey lineSizeGetKey;
 
-  DayView({
-    this.month,
-    this.day,
-    this.titleKey,
-  });
+  DayView({this.month, this.day, this.titleKey, this.lineSizeGetKey});
 
   @override
   State<StatefulWidget> createState() => new _DayViewState(month, day);
@@ -108,6 +105,8 @@ class _DayViewState extends State<DayView> {
     await prefs.setString('$_month-$_day-st', '09:00');
     await prefs.setString('$_month-$_day-ed', '18:00');
     widget.titleKey.currentState.calc();
+    RenderBox render = context.findRenderObject();
+    print("size : ${render.size}");
   }
 
   void clearTime() async {
@@ -120,6 +119,7 @@ class _DayViewState extends State<DayView> {
   @override
   Widget build(BuildContext context) {
     return Container(
+      key: widget.lineSizeGetKey,
       padding: const EdgeInsets.all(16.0),
       decoration: new BoxDecoration(
           color: dateInfo.getDayColor(_month, _day),
@@ -206,7 +206,8 @@ class StTimeBtn extends StatefulWidget {
   final String date;
   final GlobalKey<TabHeadState> titleKey;
 
-  const StTimeBtn({Key key, this.timeStr, this.date, this.titleKey}) : super(key: key);
+  const StTimeBtn({Key key, this.timeStr, this.date, this.titleKey})
+      : super(key: key);
 
   @override
   State<StatefulWidget> createState() => new _StTimeBtnState(timeStr);
@@ -250,7 +251,7 @@ class _StTimeBtnState extends State<StTimeBtn> {
   void getSavedTime() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String time = prefs.getString('${widget.date}-st');
-    if(time != null && time.isNotEmpty){
+    if (time != null && time.isNotEmpty) {
       setState(() {
         _time = time;
       });
@@ -290,12 +291,8 @@ class EdTimeBtn extends StatefulWidget {
   final String date;
   final GlobalKey<TabHeadState> titleKey;
 
-  const EdTimeBtn({
-    Key key,
-    this.timeStr,
-    this.date,
-    this.titleKey
-  }) : super(key: key);
+  const EdTimeBtn({Key key, this.timeStr, this.date, this.titleKey})
+      : super(key: key);
 
   @override
   State<StatefulWidget> createState() => new _EdTimeBtnState(timeStr);
@@ -339,7 +336,7 @@ class _EdTimeBtnState extends State<EdTimeBtn> {
   void getSavedTime() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String time = prefs.getString('${widget.date}-ed');
-    if(time != null && time.isNotEmpty){
+    if (time != null && time.isNotEmpty) {
       setState(() {
         _time = time;
       });

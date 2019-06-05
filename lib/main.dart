@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dateInfo.dart';
 import 'tab.dart';
 import 'dart:async';
+import 'customfloadbtn.dart';
 
 void main() => runApp(new MyApp());
 
@@ -93,11 +94,14 @@ class _MyHomePageState extends State<MyHomePage>
 
   bool floatOff = true;
 
+  int currentMonth;
+
   final _tabHeaderKey = GlobalKey<TabHeadState>();
+  final _lineSizeGetKey = GlobalKey();
 
   List<Widget> _getTab() {
     List<Widget> tabs = <Widget>[];
-    for (var i = 5; i <= 5; i++) {
+    for (var i = currentMonth; i <= currentMonth; i++) {
       tabs.add(new TabHead(
         key: _tabHeaderKey,
         month: i,
@@ -108,7 +112,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   List<Widget> _getTabView() {
     List<Widget> tabs = <Widget>[];
-    for (var i = 5; i <= 5; i++) {
+    for (var i = currentMonth; i <= currentMonth; i++) {
       tabs.add(new SingleChildScrollView(
         child: new Column(
           children: _getDayList(i),
@@ -121,7 +125,8 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   setScrollPosition() async {
-    var offset = DateTime.now().day * 120.0;
+    RenderBox render = _lineSizeGetKey.currentContext.findRenderObject();
+    var offset = (DateTime.now().day - 1) * render.size.height;
     while (true) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(offset,
@@ -135,12 +140,23 @@ class _MyHomePageState extends State<MyHomePage>
 
   List<Widget> _getDayList(var month) {
     final lastDayOfMonth = new DateTime(2019, month + 1, 0);
+    var index = 0;
     return (List.generate(lastDayOfMonth.day, (i) => i).map((int i) {
-      return new DayView(
-        month: month,
-        day: i,
-        titleKey: _tabHeaderKey,
-      );
+      if(index == 0){
+        index++;
+        return new DayView(
+          month: month,
+          day: i,
+          titleKey: _tabHeaderKey,
+          lineSizeGetKey: _lineSizeGetKey,
+        );
+      } else {
+        return new DayView(
+          month: month,
+          day: i,
+          titleKey: _tabHeaderKey,
+        );
+      }
     }).toList());
   }
 
@@ -151,6 +167,7 @@ class _MyHomePageState extends State<MyHomePage>
     _scrollController = new ScrollController();
     setScrollPosition();
     dateInfo = new DateInfo();
+    currentMonth = DateTime.now().month;
   }
 
   @override
@@ -163,57 +180,6 @@ class _MyHomePageState extends State<MyHomePage>
     super.dispose();
     _tabController.dispose();
     _scrollController.dispose();
-  }
-
-  List<Widget> getFloatBtn() {
-    List<Widget> btns = <Widget>[];
-
-    if (floatOff) {
-      btns.add(new FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            if (floatOff) {
-              floatOff = false;
-            } else {
-              floatOff = true;
-            }
-          });
-        },
-        backgroundColor: Colors.pinkAccent,
-        child: Icon(const IconData(58298, fontFamily: 'MaterialIcons')),
-      ));
-    } else {
-      btns.add(new FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: Colors.blueAccent,
-        child: Icon(const IconData(58051, fontFamily: 'MaterialIcons')),
-      ));
-      btns.add(new SpaceBox(
-        height: 24.0,
-      ));
-      btns.add(new FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: Colors.blueAccent,
-        child: Icon(const IconData(59506, fontFamily: 'MaterialIcons')),
-      ));
-      btns.add(new SpaceBox(
-        height: 24.0,
-      ));      btns.add(new FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            if (floatOff) {
-              floatOff = false;
-            } else {
-              floatOff = true;
-            }
-          });
-        },
-        backgroundColor: Colors.pinkAccent,
-        child: Icon(const IconData(58298, fontFamily: 'MaterialIcons')),
-      ));
-    }
-
-    return btns;
   }
 
   @override
@@ -233,10 +199,7 @@ class _MyHomePageState extends State<MyHomePage>
         controller: _tabController,
         children: _getTabView(),
       ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: getFloatBtn(),
-      ),
+      floatingActionButton: new FloatBtnArea(),
     );
   }
 }
