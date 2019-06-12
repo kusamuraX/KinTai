@@ -67,6 +67,9 @@ class DayView extends StatefulWidget {
   final int day;
   final GlobalKey<TabHeadState> titleKey;
   final GlobalKey lineSizeGetKey;
+  final saturdayColor = Colors.blueAccent.shade100;
+  final sundayColor = Colors.redAccent.shade100;
+  final normalColor = Colors.white;
 
   DayView({this.month, this.day, this.titleKey, this.lineSizeGetKey});
 
@@ -84,6 +87,10 @@ class _DayViewState extends State<DayView> {
   }
 
   DateInfo dateInfo;
+  String _dayText;
+  String _dayTextOrg;
+  Color _backGroundColor;
+  int _dayOfWeek;
 
   final _stKey = GlobalKey<_StTimeBtnState>();
   final _edKey = GlobalKey<_EdTimeBtnState>();
@@ -92,6 +99,15 @@ class _DayViewState extends State<DayView> {
   void initState() {
     super.initState();
     dateInfo = new DateInfo();
+    _dayTextOrg = dateInfo.getDayText(_month, _day);
+    _dayText = _dayTextOrg;
+    _dayOfWeek = dateInfo.getDayColor(_month, _day);
+
+    if (_dayOfWeek == DateTime.saturday) {
+      _backGroundColor = widget.saturdayColor;
+    } else if (_dayOfWeek == DateTime.sunday) {
+      _backGroundColor = widget.sundayColor;
+    }
   }
 
   @override
@@ -105,8 +121,6 @@ class _DayViewState extends State<DayView> {
     await prefs.setString('$_month-$_day-st', '09:00');
     await prefs.setString('$_month-$_day-ed', '18:00');
     widget.titleKey.currentState.calc();
-    RenderBox render = context.findRenderObject();
-    print("size : ${render.size}");
   }
 
   void clearTime() async {
@@ -114,6 +128,121 @@ class _DayViewState extends State<DayView> {
     await prefs.remove('$_month-$_day-st');
     await prefs.remove('$_month-$_day-ed');
     widget.titleKey.currentState.calc();
+    // 休日はクリアしない
+    if (_dayOfWeek != DateTime.saturday && _dayOfWeek != DateTime.sunday) {
+      setState(() {
+        _dayText = '$_dayTextOrg';
+        _backGroundColor = Colors.white;
+      });
+    }
+  }
+
+  void getHoliday() async {
+    var result = await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return new SimpleDialog(
+            title: const Text('休暇選択'),
+            children: <Widget>[
+              new SimpleDialogOption(
+                onPressed: () => Navigator.pop(context, '有給休暇'),
+                child: const Text('有給休暇'),
+              ),
+              new SimpleDialogOption(
+                onPressed: () => Navigator.pop(context, '代替休暇'),
+                child: const Text('代替休暇'),
+              ),
+              new SimpleDialogOption(
+                onPressed: () => Navigator.pop(context, '夏季休暇'),
+                child: const Text('夏季休暇'),
+              ),
+              new SimpleDialogOption(
+                onPressed: () => Navigator.pop(context, '特別休暇'),
+                child: const Text('特別休暇'),
+              ),
+            ],
+          );
+        });
+
+    setState(() {
+      if (result != null) {
+        _dayText = '$_dayTextOrg $result';
+        _backGroundColor = Colors.deepOrangeAccent;
+      } else {
+        _dayText = '$_dayTextOrg';
+        _backGroundColor = Colors.white;
+      }
+    });
+  }
+
+  List<Widget> getBtnWidget() {
+    // 休日用
+    if (_dayOfWeek == DateTime.saturday || _dayOfWeek == DateTime.sunday) {
+      return <Widget>[
+        new MaterialButton(
+          minWidth: 30.0,
+          textColor: Colors.white,
+          color: Colors.blue,
+          onPressed: () {
+            _stKey.currentState.setFixTime();
+            _edKey.currentState.setFixTime();
+            saveFixTime();
+          },
+          child: const Text("定時"),
+        ),
+        SpaceBox.width(16.0),
+        new MaterialButton(
+          minWidth: 30.0,
+          textColor: Colors.white,
+          color: Colors.blue,
+          onPressed: () {
+            _stKey.currentState.clear();
+            _edKey.currentState.clear();
+            clearTime();
+          },
+          child: const Text("クリア"),
+        ),
+      ];
+    }
+    // 平日用
+    else {
+      return <Widget>[
+        new MaterialButton(
+          minWidth: 30.0,
+          textColor: Colors.white,
+          color: Colors.blue,
+          onPressed: () {
+            _stKey.currentState.setFixTime();
+            _edKey.currentState.setFixTime();
+            saveFixTime();
+          },
+          child: const Text("定時"),
+        ),
+        SpaceBox.width(16.0),
+        new MaterialButton(
+          minWidth: 30.0,
+          textColor: Colors.white,
+          color: Colors.blue,
+          onPressed: () async {
+            getHoliday();
+          },
+          child: const Text("休暇"),
+        ),
+        SpaceBox.width(16.0),
+        new MaterialButton(
+          minWidth: 30.0,
+          textColor: Colors.white,
+          color: Colors.blue,
+          onPressed: () {
+            _stKey.currentState.clear();
+            _edKey.currentState.clear();
+            clearTime();
+          },
+          child: const Text("クリア"),
+        ),
+      ];
+    }
   }
 
   @override
@@ -122,7 +251,7 @@ class _DayViewState extends State<DayView> {
       key: widget.lineSizeGetKey,
       padding: const EdgeInsets.all(16.0),
       decoration: new BoxDecoration(
-          color: dateInfo.getDayColor(_month, _day),
+          color: _backGroundColor,
           border: new Border(
               bottom: new BorderSide(color: Colors.black12, width: 1.0))),
       child: Row(
@@ -132,7 +261,7 @@ class _DayViewState extends State<DayView> {
             children: [
               Container(
                 alignment: Alignment.topLeft,
-                child: dateInfo.getDayText(_month, _day),
+                child: new Text(_dayText),
               ),
               Row(
                 children: [
@@ -156,41 +285,7 @@ class _DayViewState extends State<DayView> {
               ),
               SpaceBox(),
               Row(
-                children: <Widget>[
-                  new MaterialButton(
-                    minWidth: 30.0,
-                    textColor: Colors.white,
-                    color: Colors.blue,
-                    onPressed: () {
-                      _stKey.currentState.setFixTime();
-                      _edKey.currentState.setFixTime();
-                      saveFixTime();
-                    },
-                    child: const Text("定時"),
-                  ),
-                  SpaceBox.width(16.0),
-                  new MaterialButton(
-                    minWidth: 30.0,
-                    textColor: Colors.white,
-                    color: Colors.blue,
-                    onPressed: () {
-                      setState(() {});
-                    },
-                    child: const Text("休暇"),
-                  ),
-                  SpaceBox.width(16.0),
-                  new MaterialButton(
-                    minWidth: 30.0,
-                    textColor: Colors.white,
-                    color: Colors.blue,
-                    onPressed: () {
-                      _stKey.currentState.clear();
-                      _edKey.currentState.clear();
-                      clearTime();
-                    },
-                    child: const Text("クリア"),
-                  ),
-                ],
+                children: getBtnWidget(),
               ),
             ],
           ))

@@ -10,61 +10,69 @@ class FloatBtnArea extends StatefulWidget {
 
 class FloatBtnAreaState extends State<FloatBtnArea>
     with SingleTickerProviderStateMixin {
-
   AnimationController animationController;
 
   @override
   void initState() {
     super.initState();
-    animationController =
-        AnimationController(duration: Duration(milliseconds: 400), vsync: this);
+    animationController = AnimationController(
+        duration: Duration(milliseconds: 1000), vsync: this);
   }
 
   @override
   Widget build(BuildContext context) {
     return new SectorAnimation(
       controller: animationController,
+      curvedAnimation: new CurvedAnimation(
+          parent: animationController, curve: Curves.elasticOut),
     );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    animationController.dispose();
   }
 }
 
 class SectorAnimation extends StatelessWidget {
-  SectorAnimation({Key key, this.controller})
-      : _openScale = Tween<double>(
-          begin: 1.0,
-          end: 0.0,
-        ).animate(
-          new CurvedAnimation(parent: controller, curve: Curves.linear),
-        ),
-        _closeScale = Tween<double>(
+  SectorAnimation({Key key, this.controller, this.curvedAnimation})
+      : _rotaTween = Tween<double>(
           begin: 0.0,
-          end: 1.0,
+          end: 0.625,
         ).animate(
-          new CurvedAnimation(parent: controller, curve: Curves.linear),
+          curvedAnimation,
         ),
         _transTween1 =
             Tween<Offset>(begin: Offset.zero, end: const Offset(0.0, -1.2))
                 .animate(
-          new CurvedAnimation(parent: controller, curve: Curves.linear),
+          curvedAnimation,
         ),
         _transTween2 =
-        Tween<Offset>(begin: Offset.zero, end: const Offset(0.0, -2.4))
-            .animate(
-          new CurvedAnimation(parent: controller, curve: Curves.linear),
+            Tween<Offset>(begin: Offset.zero, end: const Offset(0.0, -2.4))
+                .animate(
+          curvedAnimation,
         ),
         _transTween3 =
-        Tween<Offset>(begin: Offset.zero, end: const Offset(0.0, -3.6))
-            .animate(
-          new CurvedAnimation(parent: controller, curve: Curves.linear),
+            Tween<Offset>(begin: Offset.zero, end: const Offset(0.0, -3.6))
+                .animate(
+          curvedAnimation,
+        ),
+        _scaleTween = Tween<double>(
+          begin: 0.0,
+          end: 1.0,
+        ).animate(
+          curvedAnimation,
         ),
         super(key: key);
 
   final AnimationController controller;
-  final Animation<double> _openScale;
-  final Animation<double> _closeScale;
+  final CurvedAnimation curvedAnimation;
+  final Animation<double> _rotaTween;
   final Animation<Offset> _transTween1;
   final Animation<Offset> _transTween2;
   final Animation<Offset> _transTween3;
+  final Animation<double> _scaleTween;
 
   build(context) {
     return new AnimatedBuilder(
@@ -73,49 +81,51 @@ class SectorAnimation extends StatelessWidget {
         return Stack(alignment: Alignment.center, children: <Widget>[
           new SlideTransition(
             position: _transTween3,
-            child: new FloatingActionButton(
-                child: new Icon(FontAwesomeIcons.playstation),
-                onPressed: null,
-                backgroundColor: Colors.red),
+            child: new ScaleTransition(
+              scale: _scaleTween,
+              child: new FloatingActionButton(
+                  child: new Icon(FontAwesomeIcons.playstation),
+                  onPressed: () {},
+                  backgroundColor: Colors.cyan),
+            ),
           ),
           new SlideTransition(
             position: _transTween2,
-            child: new FloatingActionButton(
-                child: new Icon(FontAwesomeIcons.trashAlt),
-                onPressed: null,
-                backgroundColor: Colors.red),
+            child: new ScaleTransition(
+              scale: _scaleTween,
+              child: new FloatingActionButton(
+                  child: new Icon(FontAwesomeIcons.trashAlt),
+                  onPressed: () {},
+                  backgroundColor: Colors.cyan),
+            ),
           ),
           new SlideTransition(
             position: _transTween1,
-            child: new FloatingActionButton(
-                child: new Icon(FontAwesomeIcons.cloudUploadAlt),
-                onPressed: null,
-                backgroundColor: Colors.red),
+            child: new ScaleTransition(
+              scale: _scaleTween,
+              child: new FloatingActionButton(
+                  child: new Icon(FontAwesomeIcons.cloudUploadAlt),
+                  onPressed: () {},
+                  backgroundColor: Colors.cyan),
+            ),
           ),
-          new ScaleTransition(
-            scale: _openScale,
+          new RotationTransition(
+            turns: _rotaTween,
             child: new FloatingActionButton(
                 child: new Icon(FontAwesomeIcons.plusCircle),
-                onPressed: _open,
-                backgroundColor: Colors.red),
-          ),
-          new ScaleTransition(
-            scale: _closeScale,
-            child: new FloatingActionButton(
-                child: new Icon(FontAwesomeIcons.timesCircle),
-                onPressed: _close,
-                backgroundColor: Colors.red),
+                onPressed: _btnPress,
+                backgroundColor: Colors.cyan),
           ),
         ]);
       },
     );
   }
 
-  _close() {
-    controller.reverse();
-  }
-
-  _open() {
-    controller.forward();
+  _btnPress() {
+    if (controller.isCompleted) {
+      controller.reverse();
+    } else {
+      controller.forward();
+    }
   }
 }

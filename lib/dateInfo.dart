@@ -6,7 +6,7 @@ import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const String _calLang = 'japanese__ja@holiday.calendar.google.com';
-const String _apiKey = 'AIzaSyBaAkBi0L9OVLn0_64P8vU7oFw2VSizD0N';
+const String _apiKey = 'AIzaSyBaAkBi0L9OVLn0_64P8vU7oFw2VSizD0M';
 
 class DateInfo {
   var _dateKeyFmt = new DateFormat('yyyy-MM-dd');
@@ -20,7 +20,7 @@ class DateInfo {
   static Map<String, String> holidayMap = {};
   static double normalWorkingHours = 0.0;
 
-  Text getDayText(int month, int day) {
+  String getDayText(int month, int day) {
     String dayStr = (day + 1).toString() + '日 ';
     DateTime _dateTime = new DateTime(2019, month, day + 1);
     switch (_dateTime.weekday) {
@@ -54,26 +54,19 @@ class DateInfo {
       dayStr += ' : ${holidayMap[key]}';
     }
 
-    return new Text(dayStr);
+    return dayStr;
   }
 
-  Color getDayColor(int month, int day) {
+  int getDayColor(int month, int day) {
     DateTime _dateTime = new DateTime(2019, month, day + 1);
     var week = _dateTime.weekday;
 
-    var rtnColor = normalColor;
-
-    if (week == DateTime.saturday) {
-      rtnColor = saturdayColor;
-    } else if (week == DateTime.sunday) {
-      rtnColor = sundayColor;
-    }
 
     if (holidayMap.containsKey(_dateKeyFmt.format(_dateTime))) {
-      rtnColor = sundayColor;
+      week = DateTime.sunday;
     }
 
-    return rtnColor;
+    return week;
   }
 
   Future<bool> getHoliday(var month) async {
