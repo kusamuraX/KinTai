@@ -124,7 +124,10 @@ class _MyHomePageState extends State<MyHomePage>
     return tabs;
   }
 
-  setScrollPosition() async {
+  _bindAfter(_) {
+    _setScrollPosition();
+  }
+  _setScrollPosition() async {
     RenderBox render = _lineSizeGetKey.currentContext.findRenderObject();
     var offset = (DateTime.now().day - 1) * render.size.height;
     while (true) {
@@ -165,9 +168,9 @@ class _MyHomePageState extends State<MyHomePage>
     super.initState();
     _tabController = new TabController(length: 1, vsync: this);
     _scrollController = new ScrollController();
-    setScrollPosition();
     dateInfo = new DateInfo();
     currentMonth = DateTime.now().month;
+    WidgetsBinding.instance.addPostFrameCallback(_bindAfter);
   }
 
   @override
