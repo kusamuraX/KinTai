@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'sheet.dart';
 
 class FloatBtnArea extends StatefulWidget {
   FloatBtnArea({Key key}) : super(key: key);
@@ -63,6 +64,7 @@ class FloatBtnAreaState extends State<FloatBtnArea>
               heroTag: 'btn2',
               child: new Icon(Icons.cloud_upload),
               onPressed: () {
+                signIn();
               },
               backgroundColor: Colors.cyan),
           ),),

@@ -59,13 +59,18 @@ class _SplashPageState extends State<SplashPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.lightBlue,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            new CircularProgressIndicator(),
-            new SpaceBox(),
-            new Text('起動処理中')
+            new Icon(Icons.people, size: 128.0,),
+            new SpaceBox(height: 16.0,),
+            new CircularProgressIndicator(
+                valueColor: new AlwaysStoppedAnimation<Color>(Colors.white)
+            ),
+            new SpaceBox(height: 16.0,),
+            new Text('起動処理中',style: TextStyle(color: Colors.white),)
           ],
         ),
       ),
@@ -144,7 +149,7 @@ class _MyHomePageState extends State<MyHomePage>
   List<Widget> _getDayList(var month) {
     final lastDayOfMonth = new DateTime(2019, month + 1, 0);
     var index = 0;
-    return (List.generate(lastDayOfMonth.day, (i) => i).map((int i) {
+    return (List.generate(lastDayOfMonth.day, (i) => i+1).map((int i) {
       if(index == 0){
         index++;
         return new DayView(

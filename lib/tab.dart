@@ -140,7 +140,7 @@ class _DayViewState extends State<DayView> {
   void getHoliday() async {
     var result = await showDialog(
         context: context,
-        barrierDismissible: false,
+        barrierDismissible: true,
         builder: (BuildContext context) {
           return new SimpleDialog(
             title: const Text('休暇選択'),
@@ -150,16 +150,16 @@ class _DayViewState extends State<DayView> {
                 child: const Text('有給休暇'),
               ),
               new SimpleDialogOption(
-                onPressed: () => Navigator.pop(context, '代替休暇'),
-                child: const Text('代替休暇'),
-              ),
-              new SimpleDialogOption(
-                onPressed: () => Navigator.pop(context, '夏季休暇'),
-                child: const Text('夏季休暇'),
+                onPressed: () => Navigator.pop(context, '代休'),
+                child: const Text('代休'),
               ),
               new SimpleDialogOption(
                 onPressed: () => Navigator.pop(context, '特別休暇'),
                 child: const Text('特別休暇'),
+              ),
+              new SimpleDialogOption(
+                onPressed: () => Navigator.pop(context, '欠勤'),
+                child: const Text('欠勤'),
               ),
             ],
           );
