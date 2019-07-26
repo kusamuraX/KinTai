@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:googleapis/sheets/v4.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
+import 'dateInfo.dart';
 
 
 const String spreadsheetId = '';
@@ -64,16 +65,13 @@ signIn() async{
 //    batchUpdateSpreadsheetRequest.requests.add(sheetAddReq);
 
     // シート内容のクリア
-    var sheetContentsClearReq = new Request();
-    UpdateCellsRequest _updateCellsRequest = new UpdateCellsRequest();
-    _updateCellsRequest.fields = 'userEnteredValue';
-    _updateCellsRequest.range = new GridRange();
-    _updateCellsRequest.range.sheetId = 0; // sheet index
-    sheetContentsClearReq.updateCells = _updateCellsRequest;
-    batchUpdateSpreadsheetRequest.requests.add(sheetContentsClearReq);
-
-    // シートのコピー
-    var sheetCopyReq = new Request();
+//    var sheetContentsClearReq = new Request();
+//    UpdateCellsRequest _updateCellsRequest = new UpdateCellsRequest();
+//    _updateCellsRequest.fields = 'userEnteredValue';
+//    _updateCellsRequest.range = new GridRange();
+//    _updateCellsRequest.range.sheetId = 0; // sheet index
+//    sheetContentsClearReq.updateCells = _updateCellsRequest;
+//    batchUpdateSpreadsheetRequest.requests.add(sheetContentsClearReq);
 
     // シート名
 //    var sheetTitleReq = new Request();
@@ -85,24 +83,29 @@ signIn() async{
 //    sheetTitleReq.updateSheetProperties = updateSheetPropertiesRequest;
 //    batchUpdateSpreadsheetRequest.requests.add(sheetTitleReq);
 
-    // batch update
-    sheetApi.spreadsheets.batchUpdate(batchUpdateSpreadsheetRequest, spreadsheetId);
+    //
 
-    var inputValues = [
-      [
-        'test input2'
-      ]
-    ];
+
+
+
+    // batch update
+//    sheetApi.spreadsheets.batchUpdate(batchUpdateSpreadsheetRequest, spreadsheetId);
+
+
+    List<List<String>> dataList = await new DateInfo().getInputInfo(7);
 
     var inputValueRange = new ValueRange();
-    inputValueRange.values = inputValues;
+    inputValueRange.values = dataList;
 
     sheetApi.spreadsheets.values.update(inputValueRange, spreadsheetId, 'sheet1!B3', valueInputOption:'RAW');
+
+
 
   } catch (error) {
     print(error);
   }
 }
+
 
 class AuthHttpClient extends http.IOClient {
   Map<String, String> _headers;
@@ -113,3 +116,4 @@ class AuthHttpClient extends http.IOClient {
     return super.send(request..headers.addAll(_headers));
   }
 }
+
