@@ -23,32 +23,7 @@ class DateInfo {
   String getDayText(int month, int day) {
     String dayStr = '$day 日 ';
     DateTime _dateTime = new DateTime(2019, month, day);
-    switch (_dateTime.weekday) {
-      case DateTime.sunday:
-        dayStr += '(日)';
-        break;
-      case DateTime.monday:
-        dayStr += '(月)';
-        break;
-      case DateTime.tuesday:
-        dayStr += '(火)';
-        break;
-      case DateTime.wednesday:
-        dayStr += '(水)';
-        break;
-      case DateTime.thursday:
-        dayStr += '(木)';
-        break;
-      case DateTime.friday:
-        dayStr += '(金)';
-        break;
-      case DateTime.saturday:
-        dayStr += '(土)';
-        break;
-      default:
-        break;
-    }
-
+    dayStr += '(${_getJPNWeekday(_dateTime.weekday)})';
     var key = _dateKeyFmt.format(_dateTime);
     if (holidayMap.containsKey(key)) {
       dayStr += ' : ${holidayMap[key]}';
@@ -57,15 +32,34 @@ class DateInfo {
     return dayStr;
   }
 
-  int getDayColor(int month, int day) {
-    DateTime _dateTime = new DateTime(2019, month, day + 1);
-    var week = _dateTime.weekday;
+  String _getJPNWeekday(int weekday){
+    switch (weekday) {
+      case DateTime.sunday:
+        return '日';
+      case DateTime.monday:
+        return '月';
+      case DateTime.tuesday:
+        return '火';
+      case DateTime.wednesday:
+        return '水';
+      case DateTime.thursday:
+        return '木';
+      case DateTime.friday:
+        return '金';
+      case DateTime.saturday:
+        return '土';
+      default:
+        return '';
+    }
+  }
 
+  int getDayColor(int month, int day) {
+    DateTime _dateTime = new DateTime(2019, month, day);
+    var week = _dateTime.weekday;
 
     if (holidayMap.containsKey(_dateKeyFmt.format(_dateTime))) {
       week = DateTime.sunday;
     }
-
     return week;
   }
 
@@ -377,5 +371,64 @@ class DateInfo {
     }
 
     return actualTime;
+  }
+
+  Future<List<List<String>>> getInputInfo(int month) async{
+
+    print('getInput');
+
+    List<List<String>> dataList = new List();
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    final lastDayOfMonth = new DateTime(2019, month + 1, 0);
+
+    DateTime currentDay = new DateTime(2019, month, 1);
+    currentDay.add(new Duration(days: 1));
+    List.generate(lastDayOfMonth.day, (i) => i).forEach((i) {
+      var date = currentDay.add(new Duration(days: i));
+      String stKey = '${date.month}-${date.day}-st';
+      String edKey = '${date.month}-${date.day}-ed';
+      String exKey = '${date.month}-${date.day}-ex';
+
+      String _stTime = prefs.getString(stKey);
+      String _edTime = prefs.getString(edKey);
+      String _exStr = prefs.getString(exKey);
+
+      List<String> dayData = new List();
+
+      // 日
+      dayData.add(date.day.toString());
+
+      // 曜日
+      dayData.add(_getJPNWeekday(date.weekday));
+
+      // 出勤区分
+      if (date.weekday != DateTime.saturday && date.weekday !=  DateTime.sunday && _exStr == null) {
+        dayData.add('出勤');
+      } else if ((date.weekday == DateTime.saturday ||date.weekday ==  DateTime.sunday) && _exStr == null) {
+        dayData.add('');
+      } else {
+        dayData.add(_exStr);
+      }
+
+      // 開始時間
+      if(_stTime == null || _stTime.isEmpty){
+        dayData.add('');
+      } else {
+        dayData.add(_stTime);
+      }
+
+      // 終了時間
+      if(_edTime == null || _edTime.isEmpty){
+        dayData.add('');
+      } else {
+        dayData.add(_edTime);
+      }
+
+      dataList.add(dayData);
+    });
+
+    return dataList;
   }
 }
