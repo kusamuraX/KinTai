@@ -99,8 +99,11 @@ class _DayViewState extends State<DayView> {
   void initState() {
     super.initState();
     dateInfo = new DateInfo();
+    // 日の文字列
     _dayTextOrg = dateInfo.getDayText(_month, _day);
     _dayText = _dayTextOrg;
+
+    // 日の背景色
     _dayOfWeek = dateInfo.getDayColor(_month, _day);
 
     if (_dayOfWeek == DateTime.saturday) {
@@ -108,25 +111,49 @@ class _DayViewState extends State<DayView> {
     } else if (_dayOfWeek == DateTime.sunday) {
       _backGroundColor = widget.sundayColor;
     }
+
+    // 休暇のチェック
+    getSavedHoliday(_month, _day);
   }
 
   @override
   void dispose() {
     super.dispose();
-    print('_DayViewState dispose $_day');
   }
 
+  void getSavedHoliday(int month, int day) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String exKey = '$month-$day-ex';
+    String _exStr  = prefs.getString(exKey);
+    if (_exStr != null && _exStr.isNotEmpty) {
+      setState(() {
+        _dayText += ' $_exStr';
+        _backGroundColor = Colors.deepOrangeAccent;
+      });
+    }
+  }
+
+  // 休暇登録
+  void saveHoliday(var holidayStr) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('$_month-$_day-ex', holidayStr);
+  }
+
+  // 定時で登録
   void saveFixTime() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('$_month-$_day-st', '09:00');
     await prefs.setString('$_month-$_day-ed', '18:00');
+    await prefs.remove('$_month-$_day-ex');
     widget.titleKey.currentState.calc();
   }
 
+  // 時間クリア
   void clearTime() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove('$_month-$_day-st');
     await prefs.remove('$_month-$_day-ed');
+    await prefs.remove('$_month-$_day-ex');
     widget.titleKey.currentState.calc();
     // 休日はクリアしない
     if (_dayOfWeek != DateTime.saturday && _dayOfWeek != DateTime.sunday) {
@@ -143,23 +170,23 @@ class _DayViewState extends State<DayView> {
         barrierDismissible: true,
         builder: (BuildContext context) {
           return new SimpleDialog(
-            title: const Text('休暇選択'),
+            title: const Text('休暇選択', style: TextStyle(fontSize: 34.0, color: Colors.black12)),
             children: <Widget>[
               new SimpleDialogOption(
                 onPressed: () => Navigator.pop(context, '有給休暇'),
-                child: const Text('有給休暇'),
+                child: const Text('有給休暇', style: TextStyle(fontSize: 26.0)),
               ),
               new SimpleDialogOption(
                 onPressed: () => Navigator.pop(context, '代休'),
-                child: const Text('代休'),
+                child: const Text('代休', style: TextStyle(fontSize: 26.0)),
               ),
               new SimpleDialogOption(
                 onPressed: () => Navigator.pop(context, '特別休暇'),
-                child: const Text('特別休暇'),
+                child: const Text('特別休暇', style: TextStyle(fontSize: 26.0)),
               ),
               new SimpleDialogOption(
                 onPressed: () => Navigator.pop(context, '欠勤'),
-                child: const Text('欠勤'),
+                child: const Text('欠勤', style: TextStyle(fontSize: 26.0)),
               ),
             ],
           );
@@ -174,6 +201,9 @@ class _DayViewState extends State<DayView> {
         _backGroundColor = Colors.white;
       }
     });
+
+    // 休暇登録
+    saveHoliday(result);
   }
 
   List<Widget> getBtnWidget() {

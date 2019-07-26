@@ -101,23 +101,31 @@ class _MyHomePageState extends State<MyHomePage>
 
   int currentMonth;
 
-  final _tabHeaderKey = GlobalKey<TabHeadState>();
+  final _tabHeaderKey1 = GlobalKey<TabHeadState>();
+  final _tabHeaderKey2 = GlobalKey<TabHeadState>();
   final _lineSizeGetKey = GlobalKey();
 
   List<Widget> _getTab() {
     List<Widget> tabs = <Widget>[];
-    for (var i = currentMonth; i <= currentMonth; i++) {
-      tabs.add(new TabHead(
-        key: _tabHeaderKey,
-        month: i,
-      ));
+    for (var i = currentMonth-1; i <= currentMonth; i++) {
+      if(i == currentMonth-1){
+        tabs.add(new TabHead(
+          key: _tabHeaderKey1,
+          month: i,
+        ));
+      } else {
+        tabs.add(new TabHead(
+          key: _tabHeaderKey2,
+          month: i,
+        ));
+      }
     }
     return tabs;
   }
 
   List<Widget> _getTabView() {
     List<Widget> tabs = <Widget>[];
-    for (var i = currentMonth; i <= currentMonth; i++) {
+    for (var i = currentMonth-1; i <= currentMonth; i++) {
       tabs.add(new SingleChildScrollView(
         child: new Column(
           children: _getDayList(i),
@@ -150,19 +158,19 @@ class _MyHomePageState extends State<MyHomePage>
     final lastDayOfMonth = new DateTime(2019, month + 1, 0);
     var index = 0;
     return (List.generate(lastDayOfMonth.day, (i) => i+1).map((int i) {
-      if(index == 0){
+      if(currentMonth == month && index == 0){
         index++;
         return new DayView(
           month: month,
           day: i,
-          titleKey: _tabHeaderKey,
+          titleKey: currentMonth == month ? _tabHeaderKey2 : _tabHeaderKey1,
           lineSizeGetKey: _lineSizeGetKey,
         );
       } else {
         return new DayView(
           month: month,
           day: i,
-          titleKey: _tabHeaderKey,
+          titleKey: currentMonth == month ? _tabHeaderKey2 : _tabHeaderKey1,
         );
       }
     }).toList());
@@ -171,7 +179,11 @@ class _MyHomePageState extends State<MyHomePage>
   @override
   void initState() {
     super.initState();
-    _tabController = new TabController(length: 1, vsync: this);
+    _tabController = new TabController(length: 2, vsync: this);
+    _tabController.index = 1;
+    _tabController.addListener(() {
+      print("change month");
+    });
     _scrollController = new ScrollController();
     dateInfo = new DateInfo();
     currentMonth = DateTime.now().month;
