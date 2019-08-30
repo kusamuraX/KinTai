@@ -1,67 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'main.dart';
-import 'dateInfo.dart';
+import 'package:teskin/util.dart';
+import 'package:teskin/dateInfo.dart';
+import 'package:teskin/workTimeTab/tabHeader.dart';
+import 'package:teskin/workTimeTab/subWidget/stTimeBtn.dart';
+import 'package:teskin/workTimeTab/subWidget/edTimeBtn.dart';
 
-// タブタイトル
-class TabHead extends StatefulWidget {
-  final int month;
-
-  const TabHead({
-    Key key,
-    this.month,
-  }) : super(key: key);
-
-  @override
-  State<StatefulWidget> createState() => new TabHeadState(month);
-}
-
-class TabHeadState extends State<TabHead> {
-  int _month;
-  double _actualWorkTime;
-
-  TabHeadState(int month) {
-    _month = month;
-    _actualWorkTime = MyApp.actualWorkingHours;
-  }
-
-  calc() {
-    _updateActualTime();
-  }
-
-  _updateActualTime() async {
-    double hours = await new DateInfo().getActualWorkingHours(widget.month);
-    setState(() {
-      _actualWorkTime = hours;
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _updateActualTime();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final Size mediaSize = MediaQuery.of(context).size;
-    return Container(
-      width: mediaSize.width,
-      alignment: Alignment.center,
-      padding: EdgeInsets.only(top: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          new Text(_month.toString() + '月'),
-          new Text('稼働時間 : ( $_actualWorkTime / ${DateInfo
-              .normalWorkingHours} )h'),
-        ],
-      ),
-    );
-  }
-}
-
-// 日付の１行データ
+/// タブビュー
+/// 日付の１行データ
 class DayView extends StatefulWidget {
   final int month;
   final int day;
@@ -70,18 +16,23 @@ class DayView extends StatefulWidget {
   final saturdayColor = Colors.blueAccent.shade100;
   final sundayColor = Colors.redAccent.shade100;
   final normalColor = Colors.white;
+  final stKey = GlobalKey<StTimeBtnState>();
+  final edKey = GlobalKey<EdTimeBtnState>();
 
-  DayView({this.month, this.day, this.titleKey, this.lineSizeGetKey});
+  DayView({Key key, this.month, this.day, this.titleKey, this.lineSizeGetKey}) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => new _DayViewState(month, day);
+  State<StatefulWidget> createState() => new DayViewState(month, day);
+
+
+
 }
 
-class _DayViewState extends State<DayView> {
+class DayViewState extends State<DayView> {
   int _month;
   int _day;
 
-  _DayViewState(int month, int day) {
+  DayViewState(int month, int day) {
     _month = month;
     _day = day;
   }
@@ -92,8 +43,6 @@ class _DayViewState extends State<DayView> {
   Color _backGroundColor;
   int _dayOfWeek;
 
-  final _stKey = GlobalKey<_StTimeBtnState>();
-  final _edKey = GlobalKey<_EdTimeBtnState>();
 
   @override
   void initState() {
@@ -124,7 +73,7 @@ class _DayViewState extends State<DayView> {
   void getSavedHoliday(int month, int day) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String exKey = '$month-$day-ex';
-    String _exStr  = prefs.getString(exKey);
+    String _exStr = prefs.getString(exKey);
     if (_exStr != null && _exStr.isNotEmpty) {
       setState(() {
         _dayText += ' $_exStr';
@@ -148,6 +97,20 @@ class _DayViewState extends State<DayView> {
     widget.titleKey.currentState.calc();
   }
 
+  // 登録されていなければ定時で登録
+  // ただし平日のみ
+  void saveFixTimeIfNotSaved() async {
+    if (_dayOfWeek != DateTime.saturday && _dayOfWeek != DateTime.sunday) {
+      widget.stKey.currentState.setFixTimeIfNotInput();
+      widget.edKey.currentState.setFixTimeIfNotInput();
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      bool suc = await prefs.setString('$_month-$_day-st', '09:00');
+      print('save $suc');
+      await prefs.setString('$_month-$_day-ed', '18:00');
+      widget.titleKey.currentState.calc();
+    }
+  }
+
   // 時間クリア
   void clearTime() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -155,6 +118,8 @@ class _DayViewState extends State<DayView> {
     await prefs.remove('$_month-$_day-ed');
     await prefs.remove('$_month-$_day-ex');
     widget.titleKey.currentState.calc();
+    widget.stKey.currentState.clear();
+    widget.edKey.currentState.clear();
     // 休日はクリアしない
     if (_dayOfWeek != DateTime.saturday && _dayOfWeek != DateTime.sunday) {
       setState(() {
@@ -170,7 +135,8 @@ class _DayViewState extends State<DayView> {
         barrierDismissible: true,
         builder: (BuildContext context) {
           return new SimpleDialog(
-            title: const Text('休暇選択', style: TextStyle(fontSize: 34.0, color: Colors.black12)),
+            title: const Text('休暇選択',
+                style: TextStyle(fontSize: 34.0, color: Colors.black12)),
             children: <Widget>[
               new SimpleDialogOption(
                 onPressed: () => Navigator.pop(context, '有給休暇'),
@@ -215,8 +181,8 @@ class _DayViewState extends State<DayView> {
           textColor: Colors.white,
           color: Colors.blue,
           onPressed: () {
-            _stKey.currentState.setFixTime();
-            _edKey.currentState.setFixTime();
+            widget.stKey.currentState.setFixTime();
+            widget.edKey.currentState.setFixTime();
             saveFixTime();
           },
           child: const Text("定時"),
@@ -227,8 +193,8 @@ class _DayViewState extends State<DayView> {
           textColor: Colors.white,
           color: Colors.blue,
           onPressed: () {
-            _stKey.currentState.clear();
-            _edKey.currentState.clear();
+            widget.stKey.currentState.clear();
+            widget.edKey.currentState.clear();
             clearTime();
           },
           child: const Text("クリア"),
@@ -243,8 +209,8 @@ class _DayViewState extends State<DayView> {
           textColor: Colors.white,
           color: Colors.blue,
           onPressed: () {
-            _stKey.currentState.setFixTime();
-            _edKey.currentState.setFixTime();
+            widget.stKey.currentState.setFixTime();
+            widget.edKey.currentState.setFixTime();
             saveFixTime();
           },
           child: const Text("定時"),
@@ -265,8 +231,8 @@ class _DayViewState extends State<DayView> {
           textColor: Colors.white,
           color: Colors.blue,
           onPressed: () {
-            _stKey.currentState.clear();
-            _edKey.currentState.clear();
+            widget.stKey.currentState.clear();
+            widget.edKey.currentState.clear();
             clearTime();
           },
           child: const Text("クリア"),
@@ -296,7 +262,7 @@ class _DayViewState extends State<DayView> {
               Row(
                 children: [
                   new StTimeBtn(
-                    key: _stKey,
+                    key: widget.stKey,
                     timeStr: DateInfo.noneTime,
                     date: '$_month-$_day',
                     titleKey: widget.titleKey,
@@ -306,7 +272,7 @@ class _DayViewState extends State<DayView> {
                     style: TextStyle(fontSize: 20.0),
                   ),
                   new EdTimeBtn(
-                    key: _edKey,
+                    key: widget.edKey,
                     timeStr: DateInfo.noneTime,
                     date: '$_month-$_day',
                     titleKey: widget.titleKey,
@@ -320,176 +286,6 @@ class _DayViewState extends State<DayView> {
             ],
           ))
         ],
-      ),
-    );
-  }
-}
-
-// 開始時間表示ボタン
-class StTimeBtn extends StatefulWidget {
-  final String timeStr;
-  final String date;
-  final GlobalKey<TabHeadState> titleKey;
-
-  const StTimeBtn({Key key, this.timeStr, this.date, this.titleKey})
-      : super(key: key);
-
-  @override
-  State<StatefulWidget> createState() => new _StTimeBtnState(timeStr);
-}
-
-class _StTimeBtnState extends State<StTimeBtn> {
-  String _time;
-
-  _StTimeBtnState(this._time);
-
-  TimeOfDay _getStShowTime(String timeStr) {
-    if (timeStr == DateInfo.noneTime) {
-      return TimeOfDay(hour: 9, minute: 0);
-    } else {
-      return new TimeOfDay(
-          hour: int.parse(timeStr.split(":")[0]),
-          minute: int.parse(timeStr.split(":")[1]));
-    }
-  }
-
-  void setFixTime() {
-    setState(() {
-      _time = TimeOfDay(hour: 9, minute: 0).format(context);
-    });
-  }
-
-  void clear() {
-    setState(() {
-      _time = DateInfo.noneTime;
-    });
-  }
-
-  void saveTime() async {
-    if (_time != DateInfo.noneTime) {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      prefs.setString('${widget.date}-st', _time);
-      widget.titleKey.currentState.calc();
-    }
-  }
-
-  void getSavedTime() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String time = prefs.getString('${widget.date}-st');
-    if (time != null && time.isNotEmpty) {
-      setState(() {
-        _time = time;
-      });
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    getSavedTime();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return new FlatButton(
-      onPressed: () async {
-        TimeOfDay selectTime = await showTimePicker(
-            context: context, initialTime: _getStShowTime(_time));
-        if (selectTime != null) {
-          setState(() {
-            _time = selectTime.format(context);
-          });
-          saveTime();
-        }
-      },
-      child: new Text(
-        _time,
-        style: TextStyle(fontSize: 20.0),
-      ),
-    );
-  }
-}
-
-// 終了時間表示ボタン
-class EdTimeBtn extends StatefulWidget {
-  final String timeStr;
-  final String date;
-  final GlobalKey<TabHeadState> titleKey;
-
-  const EdTimeBtn({Key key, this.timeStr, this.date, this.titleKey})
-      : super(key: key);
-
-  @override
-  State<StatefulWidget> createState() => new _EdTimeBtnState(timeStr);
-}
-
-class _EdTimeBtnState extends State<EdTimeBtn> {
-  String _time;
-
-  _EdTimeBtnState(this._time);
-
-  TimeOfDay _getEdShowTime(String timeStr) {
-    if (timeStr == DateInfo.noneTime) {
-      return TimeOfDay.now();
-    } else {
-      return new TimeOfDay(
-          hour: int.parse(timeStr.split(":")[0]),
-          minute: int.parse(timeStr.split(":")[1]));
-    }
-  }
-
-  void setFixTime() {
-    setState(() {
-      _time = TimeOfDay(hour: 18, minute: 0).format(context);
-    });
-  }
-
-  void clear() {
-    setState(() {
-      _time = DateInfo.noneTime;
-    });
-  }
-
-  void saveTime() async {
-    if (_time != DateInfo.noneTime) {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      prefs.setString('${widget.date}-ed', _time);
-      widget.titleKey.currentState.calc();
-    }
-  }
-
-  void getSavedTime() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String time = prefs.getString('${widget.date}-ed');
-    if (time != null && time.isNotEmpty) {
-      setState(() {
-        _time = time;
-      });
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    getSavedTime();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return new FlatButton(
-      onPressed: () async {
-        TimeOfDay selectTime = await showTimePicker(
-            context: context, initialTime: _getEdShowTime(_time));
-        if (selectTime != null) {
-          setState(() {
-            _time = selectTime.format(context);
-            saveTime();
-          });
-        }
-      },
-      child: new Text(
-        _time,
-        style: TextStyle(fontSize: 20.0),
       ),
     );
   }
