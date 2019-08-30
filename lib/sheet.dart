@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dateInfo.dart';
 
 
-const String spreadsheetId = '';
+const String spreadsheetId = '-';
 
 GoogleSignIn _googleSignIn = new GoogleSignIn(
   scopes: [SheetsApi.SpreadsheetsScope],
@@ -83,23 +83,91 @@ signIn() async{
 //    sheetTitleReq.updateSheetProperties = updateSheetPropertiesRequest;
 //    batchUpdateSpreadsheetRequest.requests.add(sheetTitleReq);
 
-    //
-
-
-
 
     // batch update
 //    sheetApi.spreadsheets.batchUpdate(batchUpdateSpreadsheetRequest, spreadsheetId);
 
 
-    List<List<String>> dataList = await new DateInfo().getInputInfo(7);
+    List<List<String>> dataList = await new DateInfo().getInputInfo(DateTime.now().month);
+//
+//    var inputValueRange = new ValueRange();
+//    inputValueRange.values = dataList;
+//
+//    sheetApi.spreadsheets.values.update(inputValueRange, spreadsheetId, 'sheet1!A2', valueInputOption:'RAW');
 
-    var inputValueRange = new ValueRange();
-    inputValueRange.values = dataList;
 
-    sheetApi.spreadsheets.values.update(inputValueRange, spreadsheetId, 'sheet1!B3', valueInputOption:'RAW');
+    BatchUpdateValuesRequest request = new BatchUpdateValuesRequest();
+    request.valueInputOption = 'RAW';
 
+    var inputList = new List<ValueRange>();
 
+    // 日付
+    var inputDayValue = new ValueRange();
+    inputDayValue.range = "sheet1!A2";
+    inputDayValue.majorDimension = "COLUMNS";
+    inputDayValue.values = new List<List<String>>();
+    var dayList = new List<String>();
+
+    // 曜日
+    var inputWeekValue = new ValueRange();
+    inputWeekValue.range = "sheet1!C2";
+    inputWeekValue.majorDimension = "COLUMNS";
+    inputWeekValue.values = new List<List<String>>();
+    var weekList = new List<String>();
+
+    // 区分
+    var inputTypeValue = new ValueRange();
+    inputTypeValue.range = "sheet1!E2";
+    inputTypeValue.majorDimension = "COLUMNS";
+    inputTypeValue.values = new List<List<String>>();
+    var typeList = new List<String>();
+
+    // 出社
+    var inputStValue = new ValueRange();
+    inputStValue.range = "sheet1!J2";
+    inputStValue.majorDimension = "COLUMNS";
+    inputStValue.values = new List<List<String>>();
+    var stList = new List<String>();
+
+    // 退社
+    var inputEdValue = new ValueRange();
+    inputEdValue.range = "sheet1!M2";
+    inputEdValue.majorDimension = "COLUMNS";
+    inputEdValue.values = new List<List<String>>();
+    var edList = new List<String>();
+
+    // 備考
+    var inputEtcValue = new ValueRange();
+    inputEtcValue.range = "sheet1!P2";
+    inputEtcValue.majorDimension = "COLUMNS";
+    inputEtcValue.values = new List<List<String>>();
+    var etcList = new List<String>();
+
+    for(List d in dataList) {
+      dayList.add(d[0]);
+      weekList.add(d[1]);
+      typeList.add(d[2]);
+      stList.add(d[3]);
+      edList.add(d[4]);
+      etcList.add(d[5]);
+    }
+
+    inputDayValue.values.add(dayList);
+    inputWeekValue.values.add(weekList);
+    inputTypeValue.values.add(typeList);
+    inputStValue.values.add(stList);
+    inputEdValue.values.add(edList);
+    inputEtcValue.values.add(etcList);
+
+    inputList.add(inputDayValue);
+    inputList.add(inputWeekValue);
+    inputList.add(inputTypeValue);
+    inputList.add(inputStValue);
+    inputList.add(inputEdValue);
+    inputList.add(inputEtcValue);
+    request.data = inputList;
+
+    sheetApi.spreadsheets.values.batchUpdate(request, spreadsheetId);
 
   } catch (error) {
     print(error);

@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
-import 'dateInfo.dart';
-import 'tab.dart';
+import 'package:teskin/dateInfo.dart';
+import 'package:teskin/workTimeTab/tabHeader.dart';
+import 'package:teskin/workTimeTab/tabView.dart';
+import 'package:teskin/splash.dart';
 import 'dart:async';
 import 'customfloadbtn.dart';
 
 void main() => runApp(new MyApp());
 
 class MyApp extends StatelessWidget {
-  static double actualWorkingHours = 0.0;
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return new MaterialApp(
-      title: '勤怠',
+      title: '勤怠管理',
       theme: new ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -27,61 +28,12 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class SpaceBox extends SizedBox {
-  SpaceBox({double width = 8.0, double height = 8.0})
-      : super(width: width, height: height);
-
-  SpaceBox.width([double value = 8.0]) : super(width: value);
-
-  SpaceBox.height([double value = 8.0]) : super(height: value);
-}
-
-class SplashPage extends StatefulWidget {
-  SplashPage({Key key}) : super(key: key);
-
-  @override
-  State<StatefulWidget> createState() => new _SplashPageState();
-}
-
-class _SplashPageState extends State<SplashPage> {
-  @override
-  void initState() {
-    super.initState();
-    _timer();
-  }
-
-  _timer() async {
-    new DateInfo().getHoliday(DateTime.now().month).then((bool) {
-      Navigator.pushReplacementNamed(context, '/main');
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.lightBlue,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            new Icon(Icons.people, size: 128.0,),
-            new SpaceBox(height: 16.0,),
-            new CircularProgressIndicator(
-                valueColor: new AlwaysStoppedAnimation<Color>(Colors.white)
-            ),
-            new SpaceBox(height: 16.0,),
-            new Text('起動処理中',style: TextStyle(color: Colors.white),)
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
 
   final String title;
+
+  final int closeDay = 15;
 
   @override
   _MyHomePageState createState() => new _MyHomePageState();
@@ -104,7 +56,13 @@ class _MyHomePageState extends State<MyHomePage>
   final _tabHeaderKey1 = GlobalKey<TabHeadState>();
   final _tabHeaderKey2 = GlobalKey<TabHeadState>();
   final _lineSizeGetKey = GlobalKey();
+  final _tabViewKey = GlobalKey();
+  final List<GlobalKey<DayViewState>> dayKeys = new List<GlobalKey<DayViewState>>.generate(70, (i) {
+    return GlobalKey<DayViewState>();
+  });
+  int dayKeyBindIndex = 0;
 
+  // タブヘッダーの設定
   List<Widget> _getTab() {
     List<Widget> tabs = <Widget>[];
     for (var i = currentMonth-1; i <= currentMonth; i++) {
@@ -137,45 +95,87 @@ class _MyHomePageState extends State<MyHomePage>
     return tabs;
   }
 
-  _bindAfter(_) {
-    _setScrollPosition();
-  }
-  _setScrollPosition() async {
+
+  // 初期のスクロール位置設定
+  _setScrollPosition() async{
     RenderBox render = _lineSizeGetKey.currentContext.findRenderObject();
-    var offset = (DateTime.now().day - 1) * render.size.height;
+    var index = DateTime.now().day > 15 ? DateTime.now().day -16 : DateTime.now().day + 14;
+    var offset = index * render.size.height;
     while (true) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(offset,
             duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
         break;
       } else {
-        await new Future.delayed(new Duration(milliseconds: 500));
+        new Future.delayed(new Duration(milliseconds: 500));
       }
     }
   }
 
+  // 月に対しての日の一覧を作成
   List<Widget> _getDayList(var month) {
-    final lastDayOfMonth = new DateTime(2019, month + 1, 0);
+    // 月ごとなら・・・
+//    final lastDayOfMonth = new DateTime(2019, month + 1, 0);
+//    var index = 0;
+//    return (List.generate(lastDayOfMonth.day, (i) => i+1).map((int i) {
+//      if(currentMonth == month && index == 0){
+//        index++;
+//        return new DayView(
+//          month: month,
+//          day: i,
+//          titleKey: currentMonth == month ? _tabHeaderKey2 : _tabHeaderKey1,
+//          lineSizeGetKey: _lineSizeGetKey,
+//        );
+//      } else {
+//        return new DayView(
+//          month: month,
+//          day: i,
+//          titleKey: currentMonth == month ? _tabHeaderKey2 : _tabHeaderKey1,
+//        );
+//      }
+//    }).toList());
+    // 15日締めなので16-15
+    List<Widget> daysArray = <Widget>[];
+    if(DateTime.now().day > widget.closeDay){
+      month-=1;
+    }
+    var stDay = new DateTime(DateTime.now().year, month , widget.closeDay+1);
+    final edDay = new DateTime(DateTime.now().year, month +1, widget.closeDay+1);
     var index = 0;
-    return (List.generate(lastDayOfMonth.day, (i) => i+1).map((int i) {
-      if(currentMonth == month && index == 0){
-        index++;
-        return new DayView(
-          month: month,
-          day: i,
-          titleKey: currentMonth == month ? _tabHeaderKey2 : _tabHeaderKey1,
+    while(stDay.add(Duration(days: index)).isBefore(edDay)) {
+      var current = stDay.add(Duration(days: index));
+      if(current.month == DateTime.now().month && current.day == DateTime.now().day){
+        daysArray.add(new DayView(
+          key: dayKeys[dayKeyBindIndex++],
+          month: current.month,
+          day: current.day,
+          titleKey: _getTabHeaderKey(current),
           lineSizeGetKey: _lineSizeGetKey,
-        );
+        ));
       } else {
-        return new DayView(
-          month: month,
-          day: i,
-          titleKey: currentMonth == month ? _tabHeaderKey2 : _tabHeaderKey1,
-        );
+        daysArray.add(new DayView(
+          key: dayKeys[dayKeyBindIndex++],
+          month: current.month,
+          day: current.day,
+          titleKey: _getTabHeaderKey(current),
+        ));
       }
-    }).toList());
+      index++;
+    }
+    return daysArray;
   }
 
+  GlobalKey<TabHeadState> _getTabHeaderKey(DateTime currentDate){
+    if(currentMonth == currentDate.month && currentDate.day <= widget.closeDay){
+      return _tabHeaderKey2;
+    } else if(currentMonth == currentDate.month+1 && currentDate.day > widget.closeDay) {
+      return _tabHeaderKey2;
+    } else {
+      return _tabHeaderKey1;
+    }
+  }
+
+  // 初期処理
   @override
   void initState() {
     super.initState();
@@ -186,8 +186,12 @@ class _MyHomePageState extends State<MyHomePage>
     });
     _scrollController = new ScrollController();
     dateInfo = new DateInfo();
-    currentMonth = DateTime.now().month;
-    WidgetsBinding.instance.addPostFrameCallback(_bindAfter);
+    if(DateTime.now().day <= widget.closeDay) {
+      currentMonth = DateTime.now().month;
+    } else {
+      currentMonth = DateTime.now().month+1;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _setScrollPosition());
   }
 
   @override
@@ -216,10 +220,11 @@ class _MyHomePageState extends State<MyHomePage>
         )),
       ),
       body: new TabBarView(
+        key: _tabViewKey,
         controller: _tabController,
         children: _getTabView(),
       ),
-      floatingActionButton: new FloatBtnArea(),
+      floatingActionButton: new FloatBtnArea(tabViewKeys: dayKeys,),
     );
   }
 }
